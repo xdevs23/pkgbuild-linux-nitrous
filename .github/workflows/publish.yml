@@ -1,0 +1,114 @@
+name: Build & Publish Arch Package
+
+on:
+  push:
+    branches: ["master"]
+  workflow_dispatch:
+
+env:
+  GPG_KEY: E52F66792B423413EA5F8B3BBCAFC8F93FFA4C23
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: archlinux
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Cache system-wide
+        uses: actions/cache@v3
+        with:
+          key: arch-build-nitrous-1
+          path: |
+            /var/cache/pacman
+
+      - name: Install necessary packages
+        run: |
+          pacman -Sy --noconfirm gnupg git \
+          'clang' 'llvm' 'lld' \
+          'bc' 'cpio' 'gettext' 'libelf' \
+          'pahole' 'perl' 'python' 'tar' \
+          'xz' 'graphviz' 'imagemagick' 'python-sphinx' \
+          'coreutils' \
+          'inetutils' 'kmod' 'lzop' 'rust' base-devel tar
+
+      - name: Create user
+        run: |
+          useradd -m -s /bin/bash -U builder
+          echo "builder ALL=(ALL:ALL) NOPASSWD: ALL" >> /etc/sudoers
+    
+      - name: Import GPG key
+        run: echo -n $GPG_PRIVATE_KEY | base64 -d | runuser -u builder -- gpg --batch --import
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+
+      - name: Cache user
+        uses: actions/cache@v3
+        with:
+          key: arch-build-nitrous-user-1
+          path: |
+            ${{ env.GITHUB_WORKSPACE }}/linux-nitrous
+            ${{ env.GITHUB_WORKSPACE }}/src
+  
+      # Runs a single command using the runners shell
+      - name: Build package
+        id: build_package
+        run: |
+          pkgver=$(cat .SRCINFO | grep "pkgver =" | head -n1 | sed -re 's/^.*pkgver.*= (.+)$/\1/')
+          pkgrel=$(cat .SRCINFO | grep "pkgrel =" | head -n1 | sed -re 's/^.*pkgrel.*= (.+)$/\1/')
+          chown -R builder:builder .
+          export MAKEFLAGS="-j$(nproc -all)"
+          runuser -u builder -- makepkg --noconfirm --needed -dfC --sign --key $GPG_KEY
+          packages=()
+          signature_files=()
+          for pkg in $(ls *.pkg.tar.*); do
+            if [[ "$pkg" != *".sig" ]]; then
+                packages+=( $(realpath $pkg) )
+                signature_files+=( $(realpath $pkg).sig )
+            fi
+          done
+          checksum_kernel="$(sha256sum *-*.tar.* | cut -d ' ' -f1)"
+          checksum_headers="$(sha256sum *headers-*.tar* | cut -d ' ' -f1)"
+          
+          repo_file=repo.db.tar.gz
+          repo_files_file=repo.files.tar.gz
+          for pkg in ${packages[@]}; do
+              echo "Adding $pkg"
+              repo-add --verify --sign --key $GPG_KEY $repo_file $pkg
+          done
+          
+          echo "Uploading repo files..."
+          ln -sf "$repo_file" linux-nitrous.db
+          ln -sf "$repo_file.sig" linux-nitrous.db.sig
+          ln -sf "$repo_files_file" linux-nitrous.files
+          ln -sf "$repo_files_file.sig" linux-nitrous.files.sig
+
+          echo "VERSION=" >> $GITHUB_OUTPUT
+          {
+            echo "ARTIFACTS=<<EOF"
+            for pkg in ${packages[@]}; do
+              echo $pkg
+            done
+            for file in ${signature_files[@]}; do
+              echo $file
+            done
+            echo "linux-nitrous.db"
+            echo "linux-nitrous.db.sig"
+            echo "linux-nitrous.files"
+            echo "linux-nitrous.files.sig"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          token: "${{ secrets.RELEASE_GH_TOKEN }}"
+          repository: "xdevs23/linux-nitrous"
+          tag_name: "v${{ steps.build_package.outputs.VERSION }}"
+          name: "Linux Nitrous ${{ steps.build_package.outputs.VERSION }}"
+          body: ""
+          files: ${{ steps.build_package.outputs.ARTIFACTS }}
+            
