@@ -25,7 +25,7 @@ makedepends=(
   'pahole' 'perl' 'python' 'tar'
   'xz' 'graphviz' 'imagemagick' 'python-sphinx'
   'texlive-latexextra' 'coreutils' 'git'
-  'inetutils' 'kmod' 'lzop' 'rust'
+  'inetutils' 'kmod' 'lzop' 'rust' 'ccache'
 )
 options=('!strip')
 source=('git+https://gitlab.com/xdevs23/linux-nitrous.git#tag=v'"$pkgver-$pkgrel"
@@ -43,6 +43,7 @@ clang_major_ver() {
 # "Modern performance" – modifies the config to enable
 # performance tuned to your specific machine (native-intel or native-amd)
 USE_MPERFORMANCE=${USE_MPERFORMANCE:=false}
+USE_CCACHE=${USE_CCACHE:=true}
 
 pkgver() {
   echo ${pkgver}
@@ -92,7 +93,12 @@ build() {
   if [[ "$MAKEFLAGS" != *"-j"* ]]; then
     makeflags="$makeflags -j$(grep -E '^processor\W' < /proc/cpuinfo | wc -l)"
   fi
-  make LLVM=1 ${makeflags} all
+  if [[ $USE_CCACHE == true ]]; then
+    # https://docs.kernel.org/kbuild/llvm.html#ccache
+    KBUILD_BUILD_TIMESTAMP='' make LLVM=1 CC="ccache clang" ${makeflags} all
+  else
+    make LLVM=1 ${makeflags} all
+  fi
 }
 
 _package() {
