@@ -9,6 +9,18 @@ env:
   GPG_KEY: E52F66792B423413EA5F8B3BBCAFC8F93FFA4C23
 
 jobs:
+  clean:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: jlumbroso/free-disk-space@main
+      with:
+        android: true
+        dotnet: true
+        haskell: true
+        docker-images: true
+        swap-storage: true
+        large-packages: false
+        tool-cache: false
   build:
     runs-on: ubuntu-latest
     container: archlinux
@@ -33,7 +45,7 @@ jobs:
           'pahole' 'perl' 'python' 'tar' \
           'xz' 'graphviz' 'imagemagick' 'python-sphinx' \
           'coreutils' \
-          'inetutils' 'kmod' 'lzop' 'rust' base-devel tar
+          'inetutils' 'kmod' 'lzop' 'rust' base-devel tar ccache
 
       - name: Create user
         run: |
@@ -48,10 +60,10 @@ jobs:
       - name: Cache user
         uses: actions/cache@v3
         with:
-          key: arch-build-nitrous-user-1
+          key: arch-build-nitrous-user-2
           path: |
             ${{ env.GITHUB_WORKSPACE }}/linux-nitrous
-            ${{ env.GITHUB_WORKSPACE }}/src
+            /home/builder/.ccache
   
       # Runs a single command using the runners shell
       - name: Build package
