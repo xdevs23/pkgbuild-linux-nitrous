@@ -23,6 +23,10 @@ jobs:
         
       - name: Cache system-wide
         uses: actions/cache@v3
+
+      - name: Restore system-wide cache
+        id: system-cache-restore
+        uses: actions/cache/restore@v4
         with:
           key: arch-build-nitrous-1
           path: |
@@ -50,6 +54,15 @@ jobs:
           'coreutils' \
           'inetutils' 'kmod' 'lzop' 'rust' base-devel tar ccache
 
+      - name: Save system cache
+        id: system-cache-save
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            /var/cache/pacman
+          key: ${{ steps.system-cache-restore.outputs.cache-primary-key }}
+
       - name: Create user
         run: |
           useradd -m -s /bin/bash -U builder
@@ -60,8 +73,9 @@ jobs:
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
 
-      - name: Cache user
-        uses: actions/cache@v3
+      - name: Restore user cache
+        id: user-cache-restore
+        uses: actions/cache/restore@v4
         with:
           key: arch-build-nitrous-user-2
           path: |
@@ -101,21 +115,31 @@ jobs:
           ln -sf "$repo_files_file" linux-nitrous.files
           ln -sf "$repo_files_file.sig" linux-nitrous.files.sig
 
-          echo "VERSION=" >> $GITHUB_OUTPUT
-          {
+          echo "VERSION=$pkgver-$pkgrel" >> $GITHUB_OUTPUT
+          (
             echo "ARTIFACTS=<<EOF"
             for pkg in ${packages[@]}; do
-              echo $pkg
+              echo $(basename $pkg)
             done
             for file in ${signature_files[@]}; do
-              echo $file
+              echo $(basename $file)
             done
             echo "linux-nitrous.db"
             echo "linux-nitrous.db.sig"
             echo "linux-nitrous.files"
             echo "linux-nitrous.files.sig"
             echo "EOF"
-          } >> $GITHUB_OUTPUT
+          ) >> $GITHUB_OUTPUT
+
+      - name: Save user cache
+        id: user-cache-save
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ${{ env.GITHUB_WORKSPACE }}/linux-nitrous
+            /home/builder/.ccache
+          key: ${{ steps.user-cache-restore.outputs.cache-primary-key }}
 
       - name: Release
         uses: softprops/action-gh-release@v2
