@@ -94,11 +94,12 @@ jobs:
       - name: Build package
         id: build_package
         run: |
+          echo "CPU count: $(nproc --all)"
           pkgver=$(cat .SRCINFO | grep "pkgver =" | head -n1 | sed -re 's/^.*pkgver.*= (.+)$/\1/')
           pkgrel=$(cat .SRCINFO | grep "pkgrel =" | head -n1 | sed -re 's/^.*pkgrel.*= (.+)$/\1/')
           chown -R builder:builder .
           export MAKEFLAGS="-j$(nproc --all)"
-          runuser -u builder -- makepkg --noconfirm --needed -dfC --sign --key $GPG_KEY
+          runuser -u builder -- env MAKEFLAGS="$MAKEFLAGS" makepkg --noconfirm --needed -dfC --sign --key $GPG_KEY
           packages=()
           signature_files=()
           for pkg in $(ls *.pkg.tar.*); do
