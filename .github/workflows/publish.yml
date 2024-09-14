@@ -37,7 +37,7 @@ jobs:
           df -h
           echo "Cleaning up..."
           # https://github.com/jlumbroso/free-disk-space/blob/main/action.yml
-          rm -rfv \
+          rm -rf \
             /host/usr/local/lib/android \
             /host/usr/share/dotnet \
             /host/opt/ghc \
