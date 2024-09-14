@@ -93,6 +93,7 @@ build() {
   if [[ "$MAKEFLAGS" != *"-j"* ]]; then
     makeflags="$makeflags -j$(grep -E '^processor\W' < /proc/cpuinfo | wc -l)"
   fi
+  echo "Using makeflags: $makeflags"
   if [[ $USE_CCACHE == true ]]; then
     # https://docs.kernel.org/kbuild/llvm.html#ccache
     KBUILD_BUILD_TIMESTAMP='' make LLVM=1 CC="ccache clang" ${makeflags} all
