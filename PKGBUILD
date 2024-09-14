@@ -60,7 +60,7 @@ _handle_lsmod() {
 }
 
 build() {
-  cd "${_srcname}"
+  cd "${_srcname}-v${pkgver}-${pkgrel}"
 
   # don't run depmod on 'make install'. We'll do this ourselves in packaging
   sed -i '2iexit 0' scripts/depmod.sh
@@ -114,7 +114,7 @@ _package() {
   backup=("etc/mkinitcpio.d/linux-nitrous.preset")
   install=${pkgbase}.install
 
-  cd "${_srcname}"
+  cd "${_srcname}-v${pkgver}-${pkgrel}"
 
   KARCH=x86
 
@@ -155,7 +155,7 @@ _package-headers() {
   pkgdesc="Header files and scripts for building modules for Linux kernel (tagged git version)"
   depends=('dkms' 'lld>=16' 'clang>=16')
 
-  cd "${_srcname}"
+  cd "${_srcname}-v${pkgver}-${pkgrel}"
   local builddir="$pkgdir/usr/lib/modules/${_kernver}/build"
 
   install -dm755 "${pkgdir}/usr/lib/modules/${_kernver}"
