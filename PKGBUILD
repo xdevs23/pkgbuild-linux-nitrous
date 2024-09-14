@@ -28,7 +28,7 @@ makedepends=(
   'inetutils' 'kmod' 'lzop' 'rust' 'ccache'
 )
 options=('!strip')
-source=('git+https://gitlab.com/xdevs23/linux-nitrous.git#tag=v'"$pkgver-$pkgrel"
+source=('https://gitlab.com/xdevs23/linux-nitrous/-/archive/v'"$pkgver-$pkgrel"'/linux-nitrous-v'"$pkgver-$pkgrel"'.tar.gz"
         # standard config files for mkinitcpio ramdisk
         "${_srcname}.preset")
 sha256sums=('SKIP'
