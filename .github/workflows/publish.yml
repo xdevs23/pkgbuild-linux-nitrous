@@ -88,7 +88,7 @@ jobs:
           key: ${{ env.USER_CACHE_KEY }}
           path: |
             ${{ env.GITHUB_WORKSPACE }}/linux-nitrous
-            /home/builder/.ccache
+            /home/builder/.cache/ccache
   
       # Runs a single command using the runners shell
       - name: Build package
@@ -100,6 +100,7 @@ jobs:
           runuser -u builder -- ccache -p
           runuser -u builder -- ccache -s
           runuser -u builder -- ccache -M 4G
+          clang --version
           chown -R builder:builder .
           export MAKEFLAGS="-j$(nproc --all)"
           runuser -u builder -- env MAKEFLAGS="$MAKEFLAGS" USE_CCACHE="true" CC="ccache clang" makepkg --noconfirm --needed -dfC --sign --key $GPG_KEY
@@ -163,7 +164,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: |
-            /home/builder/.ccache
+            /home/builder/.cache/ccache
           key: ${{ steps.user-cache-restore.outputs.cache-primary-key }}
 
       - name: Release
