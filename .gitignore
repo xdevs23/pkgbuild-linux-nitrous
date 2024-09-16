@@ -8,3 +8,4 @@ src
 zen-config
 nitrous-config
 linux-nitrous
+*.tar.*
