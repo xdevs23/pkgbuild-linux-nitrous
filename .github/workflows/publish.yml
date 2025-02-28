@@ -45,7 +45,7 @@ jobs:
 
       - name: Install necessary packages
         run: |
-          pacman -Sy --noconfirm gnupg git \
+          pacman -Sy --noconfirm --overwrite '*' gnupg git \
           'clang' 'llvm' 'lld' \
           'bc' 'cpio' 'gettext' 'libelf' \
           'pahole' 'perl' 'python' 'tar' \
