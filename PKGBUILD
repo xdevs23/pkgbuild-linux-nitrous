@@ -70,9 +70,9 @@ build() {
 
   make -s kernelrelease > version
 
-  export KCPPFLAGS="-march=x86_64-v3"
+  export KCPPFLAGS="-march=x86-64-v3"
   export KCFLAGS="-march=x86-64-v3"
-  export KRUSTFLAGS="-Ctarget-cpu=x86_64-v3"
+  export KRUSTFLAGS="-Ctarget-cpu=x86-64-v3"
 
   makeflags="${MAKEFLAGS}"
   if [[ "$MAKEFLAGS" != *"-j"* ]]; then
